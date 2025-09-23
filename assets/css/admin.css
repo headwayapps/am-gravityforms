@@ -1,0 +1,158 @@
+/**
+ * Admin styles for Gravity Forms Document Generator
+ */
+
+/* Field mapping table */
+#gf_docgen_field_mapping_table {
+    margin-top: 15px;
+}
+
+#gf_docgen_field_mapping_table th {
+    font-weight: 600;
+    padding: 10px;
+}
+
+#gf_docgen_field_mapping_table td {
+    padding: 8px 10px;
+}
+
+#gf_docgen_field_mapping_table .field-mapping-input {
+    width: 100%;
+    max-width: 300px;
+}
+
+/* Settings panels */
+.gform-settings-panel {
+    margin-bottom: 20px;
+}
+
+.gform-settings-panel__header {
+    background: #f8f8f8;
+    border: 1px solid #ddd;
+    border-bottom: none;
+    padding: 10px 15px;
+}
+
+.gform-settings-panel__title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.gform-settings-panel__content {
+    border: 1px solid #ddd;
+    padding: 15px;
+    background: #fff;
+}
+
+.gform-settings-field {
+    margin-bottom: 20px;
+}
+
+.gform-settings-field:last-child {
+    margin-bottom: 0;
+}
+
+.gform-settings-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.gform-settings-field__description {
+    color: #666;
+    font-style: italic;
+    margin-top: 5px;
+    font-size: 13px;
+}
+
+.gform-settings-input__container {
+    display: block;
+}
+
+.gf-placeholder-tags {
+    display: inline-block;
+    margin: 5px 0;
+    line-height: 2;
+}
+
+.gf-placeholder-tag {
+    background: #f1f1f1;
+    padding: 2px 6px;
+    margin: 2px;
+    border-radius: 3px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+/* Checkboxes */
+.gform-settings-field__checkbox .gform-settings-label {
+    display: inline;
+    font-weight: normal;
+    margin-left: 5px;
+}
+
+/* Spinners */
+.spinner {
+    visibility: hidden;
+}
+
+.spinner.is-active {
+    visibility: visible;
+}
+
+/* API test container */
+.api-test-container {
+    background: #f8f8f8;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    margin: 20px 0;
+}
+
+/* Autocomplete styling */
+.ui-autocomplete {
+    max-height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.ui-menu-item {
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.ui-state-active,
+.ui-state-focus {
+    background: #0073aa;
+    color: #fff;
+    border: none;
+    margin: 0;
+}
+
+/* Notices */
+.notice {
+    margin: 15px 0;
+}
+
+#test_api_result {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+/* Multiple select */
+select[multiple] {
+    height: auto;
+    min-height: 100px;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 782px) {
+    .gform-settings-field input[type="text"],
+    .gform-settings-field input[type="email"],
+    .gform-settings-field textarea,
+    .gform-settings-field select {
+        width: 100%;
+    }
+}
