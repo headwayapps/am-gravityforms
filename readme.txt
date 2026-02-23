@@ -12,7 +12,7 @@ Generate documents from Gravity Forms submissions using the ActiveMerge document
 
 == Description ==
 
-GF ActiveMerge Document Generator is a WordPress plugin that allows you to generate documents from Gravity Forms submissions. It integrates with the ActiveMerge document generation service to create PDF, DOCX, or PPTX documents with data from your form submissions.
+GF ActiveMerge Document Generator is a WordPress plugin that allows you to generate documents from Gravity Forms submissions. It integrates with the ActiveMerge https://activemerge.com document generation service to create PDF, DOCX, or PPTX documents with data from your form submissions.
 
 = Features =
 
