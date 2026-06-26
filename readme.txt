@@ -1,8 +1,8 @@
 === GF ActiveMerge Document Generator ===
-Contributors: ActiveMerge
+Contributors: headwayapps, ActiveMerge
 Tags: gravity forms, pdf, docx, document generation
 Requires at least: 5.0
-Tested up to: 6.8
+Tested up to: 6.9
 Stable tag: 1.0.0
 Requires PHP: 7.4
 License: GPLv2 or later
@@ -57,6 +57,26 @@ Edit a form, go to the Document Generator tab, enter your template ID, and click
 2. Form settings page
 3. Field mapping
 4. Entry detail with document link
+
+== External Services ==
+
+This plugin connects to the ActiveMerge document generation API to generate PDF, DOCX, and PPTX documents from Gravity Forms submissions.
+
+= What data is sent and when =
+
+* **Template placeholders:** When configuring a form, the plugin sends a request to retrieve available template placeholders from your ActiveMerge account.
+* **Document generation:** When a Gravity Forms submission occurs (and document generation is enabled for that form), the plugin sends the mapped form field data along with the template ID and desired output format to the ActiveMerge API to generate a document.
+* **User credits:** The plugin may request your account credit balance from the ActiveMerge API.
+
+All API requests include your ActiveMerge API key for authentication.
+
+= Service details =
+
+This service is provided by ActiveMerge.
+
+* Service website: [https://activemerge.com](https://activemerge.com)
+* Terms of Service: [https://activemerge.com/terms-conditions/](https://activemerge.com/terms-conditions/)
+* Privacy Policy: [https://activemerge.com/privacy-policy/](https://activemerge.com/privacy-policy/)
 
 == Changelog ==
 

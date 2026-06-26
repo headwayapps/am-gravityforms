@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class GF_Document_Admin {
+class GF_Docgen_Admin {
     private $api_handler;
     
     public function __construct($api_handler) {

@@ -16,12 +16,12 @@
  * any later version.
  */
 
-global $wp_filesystem;
-
 // Exit if accessed directly
 if (!defined('ABSPATH')) {
     exit;
 }
+
+global $wp_filesystem;
 
 // Define plugin constants
 define('GF_DOCGEN_VERSION', '1.0.0');
@@ -104,7 +104,7 @@ function gf_docgen_check_dependency() {
     require_once GF_DOCGEN_PLUGIN_DIR . 'includes/class-gf-document-generator.php';
     
     // Initialize the plugin
-    GF_Document_Generator::get_instance();
+    GF_Docgen_Generator::get_instance();
 }
 
 /**
@@ -162,17 +162,38 @@ function gf_docgen_deactivate() {
  * Uses date-based rotation - creates new log file each day and cleans up old files.
  */
 function gf_docgen_custom_log($message) {
-    $log_dir = WP_CONTENT_DIR . '/uploads/';
+    $upload_dir = wp_upload_dir();
+    $log_dir = $upload_dir['basedir'] . '/gf-docgen-logs/';
     $log_file = $log_dir . 'gf-docgen-' . gmdate('Y-m-d') . '.log';
     $max_days = 30; // Keep logs for 30 days
-    
+
+    // Ensure log directory exists
+    if (!file_exists($log_dir)) {
+        wp_mkdir_p($log_dir);
+        // Protect log directory from direct access
+        $htaccess_file = $log_dir . '.htaccess';
+        if (!file_exists($htaccess_file)) {
+            global $wp_filesystem;
+            if (is_object($wp_filesystem) && $wp_filesystem instanceof WP_Filesystem_Base) {
+                $wp_filesystem->put_contents($htaccess_file, "deny from all\n", FS_CHMOD_FILE);
+            }
+        }
+    }
+
     // Clean up old log files (only run occasionally to avoid performance impact)
     if (wp_rand(1, 100) === 1) { // Run cleanup 1% of the time
         gf_docgen_cleanup_old_logs($log_dir, $max_days);
     }
-    
+
     $log_entry = '[' . gmdate('Y-m-d H:i:s') . '] ' . $message . PHP_EOL;
-    file_put_contents($log_file, $log_entry, FILE_APPEND | LOCK_EX);
+    global $wp_filesystem;
+    if (is_object($wp_filesystem) && $wp_filesystem instanceof WP_Filesystem_Base) {
+        $existing = '';
+        if ($wp_filesystem->exists($log_file)) {
+            $existing = $wp_filesystem->get_contents($log_file);
+        }
+        $wp_filesystem->put_contents($log_file, $existing . $log_entry, FS_CHMOD_FILE);
+    }
 }
 
 /**

@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class GF_Document_API_Handler {
+class GF_Docgen_API_Handler {
     private $api_base_url;
     private $api_generation_endpoint;
     private $api_key;

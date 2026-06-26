@@ -10,18 +10,18 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class GF_Document_Generator {
+class GF_Docgen_Generator {
     private static $instance = null;
     private $api_handler = null;
     
     // Private constructor to prevent direct creation
     private function __construct() {
         // Initialize API handler
-        $this->api_handler = new GF_Document_API_Handler();
+        $this->api_handler = new GF_Docgen_API_Handler();
         
         // Initialize admin
         if (is_admin()) {
-            new GF_Document_Admin($this->api_handler);
+            new GF_Docgen_Admin($this->api_handler);
         }
         
         // Add hooks
@@ -39,7 +39,7 @@ class GF_Document_Generator {
         add_action('wp_ajax_nopriv_gf_docgen_get_real_job_id', array($this, 'ajax_get_real_job_id'));
         
         // Add shortcode for document download
-        add_shortcode('gf_document_download', array($this, 'document_download_shortcode'));
+        add_shortcode('gf_docgen_download', array($this, 'document_download_shortcode'));
         
         // Add confirmation page content - CRITICAL: Use higher priority
         add_filter('gform_confirmation', array($this, 'add_download_link_to_confirmation'), 20, 4);
@@ -48,7 +48,7 @@ class GF_Document_Generator {
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
         
         // DEBUG: Log that hooks are being added
-        gf_docgen_custom_log('GF_Document_Generator: Hooks added, gform_confirmation filter registered');
+        gf_docgen_custom_log('GF_Docgen_Generator: Hooks added, gform_confirmation filter registered');
     }
     
     /**
@@ -57,7 +57,7 @@ class GF_Document_Generator {
     public static function get_instance() {
         if (null === self::$instance) {
             self::$instance = new self();
-            gf_docgen_custom_log('GF_Document_Generator: Instance created');
+            gf_docgen_custom_log('GF_Docgen_Generator: Instance created');
         }
         return self::$instance;
     }
@@ -68,8 +68,9 @@ class GF_Document_Generator {
     public function enqueue_scripts() {
         // Only enqueue on frontend
         if (!is_admin()) {
-            wp_enqueue_script('jquery');
-            wp_localize_script('jquery', 'gf_docgen_ajax', array(
+            wp_enqueue_style('gf-docgen-frontend', GF_DOCGEN_PLUGIN_URL . 'assets/css/frontend.css', array(), GF_DOCGEN_VERSION);
+            wp_enqueue_script('gf-docgen-frontend', GF_DOCGEN_PLUGIN_URL . 'assets/js/frontend.js', array('jquery'), GF_DOCGEN_VERSION, true);
+            wp_localize_script('gf-docgen-frontend', 'gf_docgen_ajax', array(
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('gf_docgen_nonce')
             ));
@@ -83,15 +84,15 @@ class GF_Document_Generator {
      * @param array $form The form object
      */
     public function process_form_submission($entry, $form) {
-        gf_docgen_custom_log('GF_Document_Generator: process_form_submission called for form ' . $form['id']);
+        gf_docgen_custom_log('GF_Docgen_Generator: process_form_submission called for form ' . $form['id']);
         
         // Check if document generation is enabled for this form
         $form_settings = get_option('gf_docgen_form_' . $form['id'], null);
         
-        gf_docgen_custom_log('GF_Document_Generator: Form settings for form ' . $form['id'] . ': ' . wp_json_encode($form_settings));
+        gf_docgen_custom_log('GF_Docgen_Generator: Form settings for form ' . $form['id'] . ': ' . wp_json_encode($form_settings));
         
         if (empty($form_settings) || empty($form_settings['enabled']) || $form_settings['enabled'] !== '1') {
-            gf_docgen_custom_log('GF_Document_Generator: Document generation not enabled for form ' . $form['id']);
+            gf_docgen_custom_log('GF_Docgen_Generator: Document generation not enabled for form ' . $form['id']);
             return;
         }
         
@@ -107,7 +108,7 @@ class GF_Document_Generator {
         // Generate a unique job ID
         $job_id = uniqid('gf_docgen_' . $entry['id'] . '_');
         
-        gf_docgen_custom_log('GF_Document_Generator: Created job ID: ' . $job_id . ' for entry: ' . $entry['id']);
+        gf_docgen_custom_log('GF_Docgen_Generator: Created job ID: ' . $job_id . ' for entry: ' . $entry['id']);
         
         // Store job status in database
         $job_data = array(
@@ -125,19 +126,19 @@ class GF_Document_Generator {
         gform_update_meta($entry['id'], 'document_job_id', $job_id);
         gform_update_meta($entry['id'], 'document_status', 'processing');
         
-        gf_docgen_custom_log('GF_Document_Generator: Stored job data and entry meta for job: ' . $job_id);
+        gf_docgen_custom_log('GF_Docgen_Generator: Stored job data and entry meta for job: ' . $job_id);
         
         // Schedule async document generation
         wp_schedule_single_event(time(), 'gf_docgen_generate_async', array($job_id, $entry['id']));
         
-        gf_docgen_custom_log('GF_Document_Generator: Scheduled async generation for job: ' . $job_id);
+        gf_docgen_custom_log('GF_Docgen_Generator: Scheduled async generation for job: ' . $job_id);
     }
     
     /**
      * Handle async document generation
      */
     public function generate_document_async($job_id, $entry_id) {
-        gf_docgen_custom_log('GF_Document_Generator: generate_document_async called for job: ' . $job_id);
+        gf_docgen_custom_log('GF_Docgen_Generator: generate_document_async called for job: ' . $job_id);
         
         // Get job data
         $job_data = get_option('gf_docgen_job_' . $job_id);
@@ -159,7 +160,7 @@ class GF_Document_Generator {
             // Prepare form data
             $form_data = $this->prepare_form_data($entry, $form);
             
-            gf_docgen_custom_log('GF_Document_Generator: Form data prepared: ' . wp_json_encode($form_data));
+            gf_docgen_custom_log('GF_Docgen_Generator: Form data prepared: ' . wp_json_encode($form_data));
             
             // Generate custom filename if specified
             $custom_filename = '';
@@ -169,7 +170,7 @@ class GF_Document_Generator {
                     $entry, 
                     $form
                 );
-                gf_docgen_custom_log('GF_Document_Generator: Custom filename generated: ' . $custom_filename);
+                gf_docgen_custom_log('GF_Docgen_Generator: Custom filename generated: ' . $custom_filename);
             }
             
             // Generate the document
@@ -195,7 +196,7 @@ class GF_Document_Generator {
                     'document_url' => $document_url
                 ));
                 
-                gf_docgen_custom_log('GF_Document_Generator: Document generated successfully for job: ' . $job_id . ', URL: ' . $document_url);
+                gf_docgen_custom_log('GF_Docgen_Generator: Document generated successfully for job: ' . $job_id . ', URL: ' . $document_url);
                 
                 // Handle email and notifications
                 $form_settings = $job_data['form_settings'];
@@ -208,7 +209,7 @@ class GF_Document_Generator {
             } else {
                 $this->update_job_status($job_id, 'failed', 'Document generation failed');
                 gform_update_meta($entry['id'], 'document_status', 'failed');
-                gf_docgen_custom_log('GF_Document_Generator: Document generation failed for job: ' . $job_id);
+                gf_docgen_custom_log('GF_Docgen_Generator: Document generation failed for job: ' . $job_id);
             }
             
         } catch (Exception $e) {
@@ -236,7 +237,7 @@ class GF_Document_Generator {
         
         update_option('gf_docgen_job_' . $job_id, $job_data);
         
-        gf_docgen_custom_log('GF_Document_Generator: Updated job status to: ' . $status . ' for job: ' . $job_id);
+        gf_docgen_custom_log('GF_Docgen_Generator: Updated job status to: ' . $status . ' for job: ' . $job_id);
     }
     
     /**
@@ -266,7 +267,7 @@ class GF_Document_Generator {
             return;
         }
         
-        gf_docgen_custom_log('GF_Document_Generator: AJAX status check for job: ' . $job_id . ', status: ' . $job_data['status']);
+        gf_docgen_custom_log('GF_Docgen_Generator: AJAX status check for job: ' . $job_id . ', status: ' . $job_data['status']);
         
         wp_send_json_success($job_data);
     }
@@ -584,7 +585,7 @@ class GF_Document_Generator {
     /**
      * Shortcode to display document download link
      * 
-     * Usage: [gf_document_download entry_id="123" text="Download Your Document" class="btn btn-primary"]
+     * Usage: [gf_docgen_download entry_id="123" text="Download Your Document" class="btn btn-primary"]
      * 
      * @param array $atts Shortcode attributes
      * @return string HTML output
@@ -637,22 +638,22 @@ class GF_Document_Generator {
      * @return string Modified confirmation content
      */
      public function add_download_link_to_confirmation($confirmation, $form, $entry, $ajax) {
-        gf_docgen_custom_log('GF_Document_Generator: add_download_link_to_confirmation called for form ' . $form['id'] . ', entry ' . $entry['id']);
-        gf_docgen_custom_log('GF_Document_Generator: Current confirmation content: ' . substr($confirmation, 0, 200) . '...');
+        gf_docgen_custom_log('GF_Docgen_Generator: add_download_link_to_confirmation called for form ' . $form['id'] . ', entry ' . $entry['id']);
+        gf_docgen_custom_log('GF_Docgen_Generator: Current confirmation content: ' . substr($confirmation, 0, 200) . '...');
         
         // Check if document generation is enabled for this form
         $form_settings = get_option('gf_docgen_form_' . $form['id'], null);
         
-        gf_docgen_custom_log('GF_Document_Generator: Form settings: ' . wp_json_encode($form_settings));
+        gf_docgen_custom_log('GF_Docgen_Generator: Form settings: ' . wp_json_encode($form_settings));
         
         if (empty($form_settings) || empty($form_settings['enabled']) || $form_settings['enabled'] !== '1') {
-            gf_docgen_custom_log('GF_Document_Generator: Document generation not enabled for form ' . $form['id']);
+            gf_docgen_custom_log('GF_Docgen_Generator: Document generation not enabled for form ' . $form['id']);
             return $confirmation;
         }
         
         // Check if download link should be shown on confirmation
         if (empty($form_settings['show_download_link']) || $form_settings['show_download_link'] !== '1') {
-            gf_docgen_custom_log('GF_Document_Generator: Show download link not enabled for form ' . $form['id']);
+            gf_docgen_custom_log('GF_Docgen_Generator: Show download link not enabled for form ' . $form['id']);
             return $confirmation;
         }
         
@@ -660,13 +661,13 @@ class GF_Document_Generator {
         $job_id = gform_get_meta($entry['id'], 'document_job_id');
         $document_status = gform_get_meta($entry['id'], 'document_status');
         
-        gf_docgen_custom_log('GF_Document_Generator: Job ID: ' . $job_id . ', Document status: ' . $document_status);
+        gf_docgen_custom_log('GF_Docgen_Generator: Job ID: ' . $job_id . ', Document status: ' . $document_status);
         
         // If no job ID yet, check if we just submitted the form (job might not be created yet)
         if (empty($job_id)) {
             // Generate a temporary job ID based on entry ID and show loading state
             $temp_job_id = 'temp_' . $entry['id'] . '_' . time();
-            gf_docgen_custom_log('GF_Document_Generator: No job ID found for entry ' . $entry['id'] . ', using temporary ID: ' . $temp_job_id);
+            gf_docgen_custom_log('GF_Docgen_Generator: No job ID found for entry ' . $entry['id'] . ', using temporary ID: ' . $temp_job_id);
             $job_id = $temp_job_id;
             $show_temp_loading = true;
         } else {
@@ -676,7 +677,7 @@ class GF_Document_Generator {
         // Check if document is already ready
         $document_url = gform_get_meta($entry['id'], 'document_url');
         
-        gf_docgen_custom_log('GF_Document_Generator: Document URL: ' . $document_url);
+        gf_docgen_custom_log('GF_Docgen_Generator: Document URL: ' . $document_url);
         
         if (!empty($document_url) && $document_status === 'completed') {
             // Document is ready - show download link
@@ -704,7 +705,7 @@ class GF_Document_Generator {
             
             $confirmation .= $download_link;
             
-            gf_docgen_custom_log('GF_Document_Generator: Added completed download link to confirmation');
+            gf_docgen_custom_log('GF_Docgen_Generator: Added completed download link to confirmation');
         } else {
             // Document is still being generated - show loading state
             $download_text = !empty($form_settings['download_link_text']) ? 
@@ -712,10 +713,10 @@ class GF_Document_Generator {
                 __('Download Your Document', 'gf-activemerge');
             
             $loading_html = sprintf(
-                '<div id="gf-document-status" data-job-id="%s" style="margin-top: 20px; text-align: center;">
+                '<div id="gf-document-status" data-job-id="%s" data-entry-id="%s" data-temp-loading="%s" style="margin-top: 20px; text-align: center;">
                     <div class="gf-document-loading">
                         <h3>%s</h3>
-                        <div class="gf-spinner" style="margin: 20px auto; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #0073aa; border-radius: 50%%; animation: spin 1s linear infinite;"></div>
+                        <div class="gf-docgen-spinner"></div>
                         <p>%s</p>
                     </div>
                     <div id="gf-download-ready" style="display: none;">
@@ -726,133 +727,24 @@ class GF_Document_Generator {
                         <h3>%s</h3>
                         <p>%s</p>
                     </div>
-                </div>
-                
-                <style>
-                @keyframes spin {
-                    0%% { transform: rotate(0deg); }
-                    100%% { transform: rotate(360deg); }
-                }
-                </style>
-                
-                <script>
-                jQuery(document).ready(function($) {
-                    console.log("Starting document status check for job: %s");
-                    
-                    // If this is a temp job ID, wait a bit for the real job to be created
-                    %s
-                    
-                    function checkDocumentStatus(jobId) {
-                        console.log("Checking status for job:", jobId);
-                        
-                        // If it\'s a temp job, first try to get the real job ID
-                        if (jobId.indexOf("temp_") === 0) {
-                            console.log("This is a temp job ID, getting real job ID...");
-                            $.ajax({
-                                url: gf_docgen_ajax.ajax_url,
-                                type: "POST", 
-                                data: {
-                                    action: "gf_docgen_get_real_job_id",
-                                    entry_id: "%s",
-                                    nonce: gf_docgen_ajax.nonce
-                                },
-                                success: function(response) {
-                                    console.log("Real job ID response:", response);
-                                    if (response.success && response.data.job_id) {
-                                        console.log("Got real job ID:", response.data.job_id);
-                                        checkDocumentStatus(response.data.job_id);
-                                    } else {
-                                        // Still no real job, try again in 2 seconds
-                                        console.log("Real job not ready yet, trying again in 2 seconds");
-                                        setTimeout(function() {
-                                            checkDocumentStatus(jobId);
-                                        }, 2000);
-                                    }
-                                },
-                                error: function(xhr, status, error) {
-                                    console.log("Error getting real job ID:", error);
-                                    setTimeout(function() {
-                                        checkDocumentStatus(jobId);
-                                    }, 2000);
-                                }
-                            });
-                            return;
-                        }
-                        
-                        // Check status of real job ID
-                        console.log("Checking document status for real job:", jobId);
-                        $.ajax({
-                            url: gf_docgen_ajax.ajax_url,
-                            type: "POST",
-                            data: {
-                                action: "gf_docgen_check_status",
-                                job_id: jobId,
-                                nonce: gf_docgen_ajax.nonce
-                            },
-                            success: function(response) {
-                                console.log("AJAX Response:", response);
-                                if (response.success) {
-                                    var status = response.data.status;
-                                    console.log("Document status:", status);
-                                    
-                                    if (status === "completed" && response.data.document_url) {
-                                        // Show download link
-                                        console.log("Document ready, showing download link");
-                                        // Extract filename from URL for proper download attribute
-                                        var urlParts = response.data.document_url.split(\'/\');
-                                        var filename = urlParts[urlParts.length - 1];
-                                        $("#gf-document-download-link").attr("href", response.data.document_url).attr("download", filename);
-                                        $(".gf-document-loading").hide();
-                                        $("#gf-download-ready").show();
-                                    } else if (status === "failed") {
-                                        // Show error
-                                        console.log("Document generation failed");
-                                        $(".gf-document-loading").hide();
-                                        $("#gf-download-error").show();
-                                    } else {
-                                        // Still processing, check again in 3 seconds
-                                        console.log("Still processing, checking again in 3 seconds");
-                                        setTimeout(function() {
-                                            checkDocumentStatus(jobId);
-                                        }, 3000);
-                                    }
-                                } else {
-                                    console.log("AJAX error:", response);
-                                    // Error occurred, try again in 5 seconds
-                                    setTimeout(function() {
-                                        checkDocumentStatus(jobId);
-                                    }, 5000);
-                                }
-                            },
-                            error: function(xhr, status, error) {
-                                console.log("Network error:", error);
-                                // Network error, try again in 5 seconds
-                                setTimeout(function() {
-                                    checkDocumentStatus(jobId);
-                                }, 5000);
-                            }
-                        });
-                    }
-                });
-                </script>',
+                </div>',
                 esc_attr($job_id),
+                esc_attr($entry['id']),
+                $show_temp_loading ? '1' : '0',
                 esc_html(__('Generating Your Document', 'gf-activemerge')),
                 esc_html(__('Please wait while we prepare your document. This page will update automatically when ready.', 'gf-activemerge')),
                 esc_html(__('Your document is ready!', 'gf-activemerge')),
                 esc_html($download_text),
                 esc_html(__('Generation Failed', 'gf-activemerge')),
-                esc_html(__('There was an error generating your document. Please contact support.', 'gf-activemerge')),
-                esc_attr($job_id),
-                $show_temp_loading ? 'setTimeout(function() { checkDocumentStatus("' . esc_attr($job_id) . '"); }, 1000);' : 'checkDocumentStatus("' . esc_attr($job_id) . '");',
-                esc_attr($entry['id'])
+                esc_html(__('There was an error generating your document. Please contact support.', 'gf-activemerge'))
             );
             
             $confirmation .= $loading_html;
             
-            gf_docgen_custom_log('GF_Document_Generator: Added loading state to confirmation');
+            gf_docgen_custom_log('GF_Docgen_Generator: Added loading state to confirmation');
         }
         
-        gf_docgen_custom_log('GF_Document_Generator: Final confirmation length: ' . strlen($confirmation));
+        gf_docgen_custom_log('GF_Docgen_Generator: Final confirmation length: ' . strlen($confirmation));
         
         return $confirmation;
     }
